@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Makefile Project",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/workspace/clevon-memorylogger/main",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "/home/workspace/clevon-memorylogger",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            //"coreDumpPath": "/path/to/dump/file"
+        }
+    ]
+}
