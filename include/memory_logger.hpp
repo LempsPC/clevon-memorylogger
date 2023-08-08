@@ -5,12 +5,13 @@
 #include "mock_flash_memory.hpp"
 
 #define MAX_LOGS_IN_PAGE 31
+#define PAYLOAD_BYTES_IN_LOG 6
 
 class MemoryLogger {
 private:
     typedef struct payload {
         uint16_t log_id;
-        uint8_t log_data[6];
+        uint8_t log_data[PAYLOAD_BYTES_IN_LOG];
     } payload_t;
     typedef struct __attribute__((packed)) {
         uint64_t log_count;
@@ -26,6 +27,7 @@ private:
     void flushLogsToFlash();
     void updateMemoryAllocation();
     void checkWholeMemoryForAllocation();
+    int8_t find_log_from_struct(page_struct_t page, uint16_t log_id_to_find, uint8_t *data);;
     int findAvailablePage();
     int findOldestPage();
 public:

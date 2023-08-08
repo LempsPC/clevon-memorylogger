@@ -31,12 +31,15 @@ void MemoryLogger::flushLogsToFlash()
 
 int8_t MemoryLogger::write_log(uint16_t log_id, uint8_t *data) 
 {
-    if (currentPage.log_count == MAX_LOGS_IN_PAGE) 
-    {    
+    if (data == nullptr) {
+    return -1;
+    }
+
+    if (currentPage.log_count == MAX_LOGS_IN_PAGE) {    
         flushLogsToFlash();
     }
     currentPage.payload[currentPage.log_count].log_id = log_id;
-    std::memcpy(currentPage.payload[currentPage.log_count].log_data, data, 6);
+    std::copy(data, data + PAYLOAD_BYTES_IN_LOG, currentPage.payload[currentPage.log_count].log_data);
     currentPage.log_count++;
     updateMemoryAllocation();
     return 0;
@@ -44,7 +47,7 @@ int8_t MemoryLogger::write_log(uint16_t log_id, uint8_t *data)
 
 void MemoryLogger::readPage(uint32_t pageNumber, page_struct_t& pageData) 
 { 
-    char buffer[256]; 
+    char buffer[PAGE_SIZE]; 
     if (flashMemory->readPageFromMemory(pageNumber, buffer)) { 
         std::copy(buffer, buffer + sizeof(page_struct_t), (char*)&pageData); 
     } 
@@ -91,14 +94,6 @@ void MemoryLogger::checkWholeMemoryForAllocation() {
         readPage(i, tempPage);
         memoryAllocation[i] = tempPage.log_count;
     }
-
-    //check by printing:
-    std::cout << "Allocation array: " << std::endl;
-    for(int i = 0; i < TOTAL_PAGES; i++)
-    {
-        std::cout << (int)memoryAllocation[i] << " ";
-    }
-    std::cout << std::endl;
 }
 
 int MemoryLogger::findAvailablePage()
@@ -159,14 +154,53 @@ int MemoryLogger::findOldestPage()
 int8_t MemoryLogger::find_log_by_id(uint16_t log_id_to_find, uint8_t *data)
 {
     int8_t result = 0;
-    /*
-    for(uint16_t i = 0; i < currentPage.log_count, i++)
-    {
-        if(currentPage.payload[i].log_id == log_id_to_find)
-        {
-            
+    
+    // First, check the current page.
+    result = find_log_from_struct(currentPage, log_id_to_find, data);
+    if (!result) {
+        return result; // log found from same page
+    }
+
+    // Create a loop iterator to track which page has been loaded from flash memory.
+    uint32_t page_iterator = currentPageNumber;
+    page_struct_t temppage;
+    // Loop through all pages in flash memory.
+    while (page_iterator != currentPageNumber) {
+        // Read the next page from flash memory.
+        readPage(page_iterator, temppage);
+
+        // Check if the log is found in the current page.
+        result = find_log_from_struct(temppage, log_id_to_find, data);
+        if (!result) {
+            // The log was found!
+            return result;
+        }
+
+        // Increment the page iterator.
+        page_iterator++;
+
+        // If the iterator has reached the end of flash memory, wrap around to the beginning.
+        if (page_iterator == TOTAL_PAGES) {
+            page_iterator = 0;
         }
     }
-    */
+
+    // The log was not found.
+    return -1;
+}
+
+int8_t MemoryLogger::find_log_from_struct(page_struct_t page, uint16_t log_id_to_find, uint8_t *data)
+{
+    int8_t result = 0;
+
+    for(uint16_t i = 0; i < page.log_count; i++)
+    {
+        if(page.payload[i].log_id == log_id_to_find)
+        {
+            std::copy(page.payload[i].log_data, page.payload[i].log_data + PAYLOAD_BYTES_IN_LOG, data);
+            return result;
+        }
+    }
+    result = -1; //not found
     return result;
 }
