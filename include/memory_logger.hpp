@@ -28,8 +28,9 @@ private:
     void updateMemoryAllocation();
     void checkWholeMemoryForAllocation();
     int8_t find_log_from_struct(page_struct_t page, uint16_t log_id_to_find, uint8_t *data);;
-    int findAvailablePage();
+    int findAvailablePage(bool *overwrite);;;
     int findOldestPage();
+    
 public:
     MemoryLogger();
     ~MemoryLogger();

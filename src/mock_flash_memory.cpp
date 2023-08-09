@@ -8,11 +8,13 @@
 
 const int FLASH_MEMORY_SIZE = TOTAL_PAGES * PAGE_SIZE;
 
-MockFlashMemory::MockFlashMemory(const std::string& filename) : filename(filename) {
+MockFlashMemory::MockFlashMemory(const std::string& filename) : filename(filename) 
+{
     initializeFlashMemoryFile();
 }
 
-bool MockFlashMemory::writePageToMemory(int pageNumber, const char* data) {
+bool MockFlashMemory::writePageToMemory(int pageNumber, const char* data) 
+{
     if (pageNumber < 0 || pageNumber >= TOTAL_PAGES) {
         std::cerr << "Invalid page number." << std::endl;
         return false;
@@ -24,23 +26,14 @@ bool MockFlashMemory::writePageToMemory(int pageNumber, const char* data) {
         return false;
     }
 
-    std::cout << "writing to flash: ";
-    /*
-    for (int i = 0; i < PAGE_SIZE; i++) {
-        // Use std::hex and std::setw to format the output
-        // Use static_cast<unsigned char> to avoid printing negative values
-        std::cout << std::hex << std::setw(2) << std::setfill('0') 
-                  << static_cast<unsigned int>(static_cast<unsigned char>(data[i])) << " ";
-    }
-    std::cout << std::endl;
-    */
     flashFile.seekp(pageNumber * PAGE_SIZE, std::ios::beg);
     flashFile.write(data, PAGE_SIZE);
     flashFile.close();
     return true;
 }
 
-bool MockFlashMemory::readPageFromMemory(int pageNumber, char* buffer) {
+bool MockFlashMemory::readPageFromMemory(int pageNumber, char* buffer) 
+{
     if (pageNumber < 0 || pageNumber >= TOTAL_PAGES) {
         std::cerr << "Invalid page number." << std::endl;
         return false;
@@ -58,9 +51,11 @@ bool MockFlashMemory::readPageFromMemory(int pageNumber, char* buffer) {
     return true;
 }
 
-void MockFlashMemory::initializeFlashMemoryFile() {
+void MockFlashMemory::initializeFlashMemoryFile() 
+{
     std::ofstream flashFile(filename, std::ios::binary | std::ios::out);
     std::vector<char> emptyPage(PAGE_SIZE, 0);
+    
     for (int i = 0; i < TOTAL_PAGES; ++i) {
         flashFile.write(&emptyPage[0], PAGE_SIZE);
     }

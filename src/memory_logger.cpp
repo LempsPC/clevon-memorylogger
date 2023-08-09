@@ -2,7 +2,8 @@
 #include <cstring>
 #include "memory_logger.hpp"
 
-MemoryLogger::MemoryLogger() {
+MemoryLogger::MemoryLogger() 
+{
     flashMemory = new MockFlashMemory("flash_memory.bin");
     std::memset(&currentPage, 0, sizeof(page_struct_t));
     currentPageNumber = 0;
@@ -11,21 +12,29 @@ MemoryLogger::MemoryLogger() {
     checkWholeMemoryForAllocation();
 }
 
-MemoryLogger::~MemoryLogger() {
+MemoryLogger::~MemoryLogger() 
+{
     delete flashMemory;
 }
 
 void MemoryLogger::flushLogsToFlash() 
 {
     // Write the page to flash memory
-     if (flashMemory->writePageToMemory(currentPage.log_count, reinterpret_cast<char*>(&currentPage))) 
+    std::cout << "flushing to memory to place: " << currentPageNumber << std::endl;
+    if (flashMemory->writePageToMemory(currentPageNumber, reinterpret_cast<char*>(&currentPage))) 
     {
         //if successful, then fetch another page and start using it
         updateMemoryAllocation();
-        currentPageNumber = findAvailablePage();
+        bool overwrite = false;
+        currentPageNumber = findAvailablePage(&overwrite);
         std::cout << "New available page " << currentPageNumber << std::endl;
         std::memset(&currentPage, 0, sizeof(page_struct_t));
         readPage(currentPageNumber, currentPage);
+        if(overwrite)
+        {
+            std::cout << "overwriting page " << currentPageNumber << std::endl;
+            std::memset(&currentPage, 0, sizeof(page_struct_t));
+        }
     }
 }
 
@@ -53,8 +62,8 @@ void MemoryLogger::readPage(uint32_t pageNumber, page_struct_t& pageData)
     } 
 }
 
-
-int MemoryLogger::checkMemoryAllocation(float *total, uint8_t *page) {
+int MemoryLogger::checkMemoryAllocation(float *total, uint8_t *page) 
+{
     int totalLogs = 0;
     int usedPages = 0;
 
@@ -64,7 +73,6 @@ int MemoryLogger::checkMemoryAllocation(float *total, uint8_t *page) {
             usedPages++;
         }
     }
-    //int usedLogs = totalLogs - memoryAllocation[0]; // Exclude the logs in unused pages (count = 0)
 
     if (totalLogs == 0) {
         return 0;
@@ -83,10 +91,8 @@ void MemoryLogger::updateMemoryAllocation()
     memoryAllocation[currentPageNumber] = currentPage.log_count;
 }
 
-/**
- * Loops through whole flash memory and reads headers, notes total memory allocation into array
-*/
-void MemoryLogger::checkWholeMemoryForAllocation() {
+void MemoryLogger::checkWholeMemoryForAllocation() 
+{
     std::memset(memoryAllocation, 0, sizeof(memoryAllocation));
     for(int i = 0; i < TOTAL_PAGES; i++)
     {
@@ -96,7 +102,7 @@ void MemoryLogger::checkWholeMemoryForAllocation() {
     }
 }
 
-int MemoryLogger::findAvailablePage()
+int MemoryLogger::findAvailablePage(bool *overwrite)
 {
     uint8_t emptiest_page_id = 0;
     uint8_t current;
@@ -104,6 +110,7 @@ int MemoryLogger::findAvailablePage()
     if(100 == checkMemoryAllocation(&total, &current))
     {
         emptiest_page_id = findOldestPage();
+        *overwrite = true;
         return emptiest_page_id;
     }
     
@@ -163,16 +170,15 @@ int8_t MemoryLogger::find_log_by_id(uint16_t log_id_to_find, uint8_t *data)
 
     // Create a loop iterator to track which page has been loaded from flash memory.
     uint32_t page_iterator = currentPageNumber;
+    page_iterator++;
     page_struct_t temppage;
     // Loop through all pages in flash memory.
-    while (page_iterator != currentPageNumber) {
-        // Read the next page from flash memory.
+    while (page_iterator != currentPageNumber) 
+    {
         readPage(page_iterator, temppage);
 
-        // Check if the log is found in the current page.
         result = find_log_from_struct(temppage, log_id_to_find, data);
         if (!result) {
-            // The log was found!
             return result;
         }
 
